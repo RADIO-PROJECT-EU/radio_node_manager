@@ -15,7 +15,8 @@ motion_analysis_process = None
 movement_sensor_sub = None
 pc_needs_to_charge = False
 kobuki_battery_sub = None
-kobuki_max_charge = 160 #TODO validate this value
+kobuki_max_charge = 164 #Validated fully charged battery value
+check_batteries = False
 nav_status_sub = None
 pc_battery_sub = None
 navigating = False
@@ -28,18 +29,22 @@ charging = False
 #movements approaching and lying to bed.
 first_detect = True
 
-#TODO on launch, set initial navigation pose. We know that we are in
-#the docking station, charging.
-
 
 def init():
     global movement_sensor_sub, nav_status_sub, pub_stop, pc_battery_sub, kobuki_battery_sub
+    global check_batteries
     rospy.init_node('radio_node_manager')
+    rospy.get_param("~check_batteries", False)
     movement_sensor_sub = rospy.Subscriber('motion_detection_sensor_status_publisher/status', SensorStatusMsg, motionSensorStatus)
     nav_status_sub = rospy.Subscriber('move_base/status', GoalStatusArray, currentNavStatus)
     pub_stop = rospy.Publisher('move_base/cancel', GoalID, queue_size=10)
-    #pc_battery_sub = rospy.Subscriber('placeholder', PlaceHolderMsg, pcBatteryCallback)
-    kobuki_battery_sub = rospy.Subscriber('mobile_base/sensors/core', SensorState, kobukiBatteryCallback)
+    if check_batteries:
+        #pc_battery_sub = rospy.Subscriber('placeholder', PlaceHolderMsg, pcBatteryCallback)
+        kobuki_battery_sub = rospy.Subscriber('mobile_base/sensors/core', SensorState, kobukiBatteryCallback)
+
+    #TODO ask the main server about what the initial state should be
+    #TODO run here all the initial nodes (movebase+amcl, urg, openni)
+    #Set initial pose on launch based on the main server's last saved position. 
 
     while not rospy.is_shutdown():  
         rospy.spin()
@@ -127,6 +132,7 @@ def goalHandler(goal_msg):
 #the kobukiBatteryCallback method.
 def pcBatteryCallback(msg):
     global pc_needs_to_charge
+    print msg
     if msg.percentage*100 < 0.05:
         pc_needs_to_charge = True
     else:
@@ -135,7 +141,8 @@ def pcBatteryCallback(msg):
 
 def kobukiBatteryCallback(msg):
     global kobuki_max_charge, pub_stop, charging, pc_needs_to_charge
-    if (msg.data.battery/kobuki_max_charge*100) < 0.05 or pc_needs_to_charge: #less that 5% battery on kobuki
+    #print msg
+    if (msg.battery/kobuki_max_charge*100) < 0.05 or pc_needs_to_charge: #less that 5% battery on kobuki
         if msg.charger == 0:
             charging = False
             print 'I am not charging, and I definitely need to!'
