@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import math
+import math, time
 import roslib, rospy
 import subprocess, shlex
 from actionlib_msgs.msg import GoalID
@@ -50,19 +50,19 @@ def init():
     command = "roslaunch turtlebot_radio_bringup radio_bringup.launch"
     command = shlex.split(command)
     subprocess.Popen(command)
-    sleep(30)
+    time.sleep(30)
     command = "roslaunch turtlebot_navigation radio_move_base.launch"
     command = shlex.split(command)
     subprocess.Popen(command)
-    sleep(2)
+    time.sleep(2)
     command = "roslaunch turtlebot_navigation radio_amcl_demo.launch"
     command = shlex.split(command)
     subprocess.Popen(command)
-    sleep(2)
+    time.sleep(2)
     command = "rosrun map_server map_server /home/turtlebot/smart_room.yaml"
     command = shlex.split(command)
     subprocess.Popen(command)
-    sleep(2)
+    time.sleep(2)
     #map server also needed. It should be included in one of the above packages with the final map.
     command = "roslaunch turtlebot_teleop logitech.launch"
     command = shlex.split(command)
@@ -70,6 +70,25 @@ def init():
 
     while not rospy.is_shutdown():  
         rospy.spin()
+    #we reach this point only after Ctrl-C
+    command = "rosnode kill turtlebot_teleop"
+    command = shlex.split(command)
+    subprocess.Popen(command)
+    command = "rosnode kill map_server"
+    command = shlex.split(command)
+    subprocess.Popen(command)
+    command = "rosnode kill move_base"
+    command = shlex.split(command)
+    subprocess.Popen(command)
+    command = "rosnode kill amcl"
+    command = shlex.split(command)
+    subprocess.Popen(command)
+    command = "rosnode kill turtlebot_teleop"
+    command = shlex.split(command)
+    subprocess.Popen(command)
+    command = "rosnode kill turtlebot_radio_bringup"
+    command = shlex.split(command)
+    subprocess.Popen(command)
 
 
 
