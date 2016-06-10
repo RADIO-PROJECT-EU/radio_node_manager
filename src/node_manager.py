@@ -20,8 +20,8 @@ check_batteries = False
 nav_status_sub = None
 pc_battery_sub = None
 navigating = False
-goal_point = []
 charging = False
+goal_point = []
 
 #first_detect becomes false the first time we see 'ok'
 #from the motion detection sensor, to ensure that
@@ -43,11 +43,35 @@ def init():
         kobuki_battery_sub = rospy.Subscriber('mobile_base/sensors/core', SensorState, kobukiBatteryCallback)
 
     #TODO ask the main server about what the initial state should be
-    #TODO run here all the initial nodes (movebase+amcl, urg, openni)
-    #Set initial pose on launch based on the main server's last saved position. 
+    #Set initial pose on launch based on the main server's last saved position.
+    #Maybe the robot itself could do this too. A save_current_state node would be useful.
+
+    #Run here all the initial nodes
+    command = "roslaunch turtlebot_radio_bringup radio_bringup.launch"
+    command = shlex.split(command)
+    subprocess.Popen(command)
+    sleep(30)
+    command = "roslaunch turtlebot_navigation radio_move_base.launch"
+    command = shlex.split(command)
+    subprocess.Popen(command)
+    sleep(2)
+    command = "roslaunch turtlebot_navigation radio_amcl_demo.launch"
+    command = shlex.split(command)
+    subprocess.Popen(command)
+    sleep(2)
+    command = "rosrun map_server map_server /home/turtlebot/smart_room.yaml"
+    command = shlex.split(command)
+    subprocess.Popen(command)
+    sleep(2)
+    #map server also needed. It should be included in one of the above packages with the final map.
+    command = "roslaunch turtlebot_teleop logitech.launch"
+    command = shlex.split(command)
+    subprocess.Popen(command)
 
     while not rospy.is_shutdown():  
         rospy.spin()
+
+
 
 '''
 0   # The goal has yet to be processed by the action server
@@ -68,8 +92,6 @@ def init():
 9   # An action client can determine that a goal is LOST. This should not be
     # sent over the wire by an action server
 '''
-
-
 def currentNavStatus(current_status_msg):
     global goal_point, goal_reached, navigating
     if len(current_status_msg.status_list) > 0:
@@ -99,25 +121,16 @@ def motionSensorStatus(ssm):
         if first_detect:
             first_detect = False
             print 'Waiting for an actual detection now'
-        '''
-        if running_motion_analysis:
-            command = "rosnode kill motion_analysis"
-            command = shlex.split(command)
-            motion_analysis_process = subprocess.Popen(command)
-            running_motion_analysis = 
-        '''
     elif not first_detect and cur_st == 'detect':
         print 'Unsubscribing from the movement sensor...'
         movement_sensor_sub.unregister()
         print 'Starting motion_analysis'
         print 'Starting HPR'
-        '''
         if not running_motion_analysis:
             command = "roslaunch motion_analysis event_detection.launch"
             command = shlex.split(command)
             motion_analysis_process = subprocess.Popen(command)
             running_motion_analysis = True
-        '''
 
 #TODO
 #Get the goal from tha radio GUI and then decide 
