@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<launch>
+	<master auto="start"/>
+
+	<node pkg="radio_node_manager" type="node_manager.py" respawn="false" name="radio_node_manager" output="screen">
+		<rosparam file="$(find radio_node_manager)/config/parameters.yaml" command="load" />
+	</node>
+</launch>

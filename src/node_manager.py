@@ -23,7 +23,7 @@ pc_battery_sub = None
 running_hpr = False
 navigating = False
 charging = False
-sound_pub = Node
+sound_pub = None
 goal_point = []
 joy_sub = None
 
@@ -42,6 +42,7 @@ def init():
     movement_sensor_sub = rospy.Subscriber('motion_detection_sensor_status_publisher/status', SensorStatusMsg, motionSensorStatus)
     nav_status_sub = rospy.Subscriber('move_base/status', GoalStatusArray, currentNavStatus)
     joy_sub = rospy.Subscriber('joy', Joy, joyCallback)
+    sound_pub = rospy.Publisher('mobile_base/commands/sound', Sound)
     pub_stop = rospy.Publisher('move_base/cancel', GoalID, queue_size=10)
     if check_batteries:
         #pc_battery_sub = rospy.Subscriber('placeholder', PlaceHolderMsg, pcBatteryCallback)
@@ -215,13 +216,13 @@ def joyCallback(msg):
     #Y starts/stops motion_analysis for object
     #Combinations of the above buttons are disabled.
     #You always have to press one of the buttons.
-    if msg.buttons[0] == 1 and msg.buttons[0] == 0 and msg.buttons[0] == 0 and msg.buttons[0] == 0:
+    if msg.buttons[0] == 1 and msg.buttons[1] == 0 and msg.buttons[2] == 0 and msg.buttons[3] == 0:
         startStopHPR()
-    elif msg.buttons[0] == 0 and msg.buttons[0] == 1 and msg.buttons[0] == 0 and msg.buttons[0] == 0:
+    elif msg.buttons[0] == 0 and msg.buttons[1] == 1 and msg.buttons[2] == 0 and msg.buttons[3] == 0:
         startStopRosVisual()
-    elif msg.buttons[0] == 0 and msg.buttons[0] == 0 and msg.buttons[0] == 1 and msg.buttons[0] == 0:
+    elif msg.buttons[0] == 0 and msg.buttons[1] == 0 and msg.buttons[2] == 1 and msg.buttons[3] == 0:
         startStopMotionAnalysisHuman
-    elif msg.buttons[0] == 0 and msg.buttons[0] == 0 and msg.buttons[0] == 0 and msg.buttons[0] == 1:
+    elif msg.buttons[0] == 0 and msg.buttons[1] == 0 and msg.buttons[2] == 0 and msg.buttons[3] == 1:
         startStopMotionAnalysisObject()
     print msg
 
