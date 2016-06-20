@@ -1,4 +1,5 @@
-mport math, time
+#!/usr/bin/env python
+import math, time
 import roslib, rospy
 import subprocess, shlex
 from sensor_msgs.msg import Joy
