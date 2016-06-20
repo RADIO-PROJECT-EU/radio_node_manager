@@ -8,7 +8,7 @@ from actionlib_msgs.msg import GoalID
 from kobuki_msgs.msg import SensorState
 from sensor_msgs.msg import BatteryState
 from actionlib_msgs.msg import GoalStatusArray
-from motion_detection_sensor_msgs.msg import SensorStatusMsg
+from motion_detection_sensor_status_publisher.msg import SensorStatusMsg
 
 running_motion_analysis_human = False
 running_motion_analysis_obj = False
