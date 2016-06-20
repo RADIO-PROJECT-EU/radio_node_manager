@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-import math, time
+mport math, time
 import roslib, rospy
 import subprocess, shlex
 from sensor_msgs.msg import Joy
@@ -133,9 +132,10 @@ def currentNavStatus(current_status_msg):
                 print 'Send navigation error to the user'
         else:
             if status == 1:
-                print 'Stopping motion analysis'
-                print 'Stopping HPR'
-                print 'Stopping ros_visual'
+                startStopHPR(False, True)
+                startStopRosVisual(False, True)
+                startStopMotionAnalysisHuman(False, True)
+                startStopMotionAnalysisObject(False, True)
                 navigating = True
 
 
@@ -151,24 +151,8 @@ def motionSensorStatus(ssm):
     elif not first_detect and cur_st == 'detect':
         print 'Unsubscribing from the movement sensor...'
         movement_sensor_sub.unregister()
-        if not running_motion_analysis_human:
-            print 'Starting motion_analysis'
-            command = "roslaunch motion_analysis human_event_detection.launch"
-            command = shlex.split(command)
-            subprocess.Popen(command)
-            running_motion_analysis_human = True
-            sound_msg = Sound()
-            sound_msg.value = 0
-            sound_pub.publish(sound_msg)
-        if not running_hpr:
-            print 'Starting HPR'
-            command = "roslaunch human_pattern_recognition  hpr.launch"
-            command = shlex.split(command)
-            subprocess.Popen(command)
-            running_hpr = True
-            sound_msg = Sound()
-            sound_msg.value = 0
-            sound_pub.publish(sound_msg)
+        startStopHPR(True, False)
+        startStopMotionAnalysisHuman(True, False)
 
 #TODO
 #Get the goal from tha radio GUI and then decide 
@@ -226,124 +210,133 @@ def joyCallback(msg):
         startStopMotionAnalysisObject()
     print msg
 
-def startStopHPR():
+def startStopHPR(start, stop):
     global running_hpr, sound_pub
     if not running_hpr:
-        print 'Starting HPR'
-        command = "roslaunch human_pattern_recognition  hpr.launch"
-        command = shlex.split(command)
-        subprocess.Popen(command)
-        command = "roslaunch hpr_wrapper  wrapper.launch"
-        command = shlex.split(command)
-        subprocess.Popen(command)
-        running_hpr = True
-        sound_msg = Sound()
-        sound_msg.value = 0
-        sound_pub.publish(sound_msg)
+        if start:
+            print 'Starting HPR'
+            command = "roslaunch human_pattern_recognition  hpr.launch"
+            command = shlex.split(command)
+            subprocess.Popen(command)
+            command = "roslaunch hpr_wrapper  wrapper.launch"
+            command = shlex.split(command)
+            subprocess.Popen(command)
+            running_hpr = True
+            sound_msg = Sound()
+            sound_msg.value = 0
+            sound_pub.publish(sound_msg)
     else:
-        print 'Stopping HPR'
-        command = "rosnode kill laser_analysis"
-        command = shlex.split(command)
-        subprocess.Popen(command)
-        command = "rosnode kill laser_overlap_trace"
-        command = shlex.split(command)
-        subprocess.Popen(command)
-        command = "rosnode kill laser_clustering"
-        command = shlex.split(command)
-        subprocess.Popen(command)
-        command = "rosnode kill laser_wall_extraction"
-        command = shlex.split(command)
-        subprocess.Popen(command)
-        subprocess.Popen(command)
-        command = "rosnode kill hpr_wrapper"
-        command = shlex.split(command)
-        subprocess.Popen(command)
-        running_hpr = False
-        sound_msg = Sound()
-        sound_msg.value = 1
-        sound_pub.publish(sound_msg)
+        if stop:
+            print 'Stopping HPR'
+            command = "rosnode kill laser_analysis"
+            command = shlex.split(command)
+            subprocess.Popen(command)
+            command = "rosnode kill laser_overlap_trace"
+            command = shlex.split(command)
+            subprocess.Popen(command)
+            command = "rosnode kill laser_clustering"
+            command = shlex.split(command)
+            subprocess.Popen(command)
+            command = "rosnode kill laser_wall_extraction"
+            command = shlex.split(command)
+            subprocess.Popen(command)
+            subprocess.Popen(command)
+            command = "rosnode kill hpr_wrapper"
+            command = shlex.split(command)
+            subprocess.Popen(command)
+            running_hpr = False
+            sound_msg = Sound()
+            sound_msg.value = 1
+            sound_pub.publish(sound_msg)
 
-def startStopMotionAnalysisHuman():
+def startStopMotionAnalysisHuman(start, stop):
     global running_motion_analysis_human, sound_pub
     if not running_motion_analysis_human:
-        print 'Starting motion_analysis'
-        command = "roslaunch motion_analysis human_event_detection.launch"
-        command = shlex.split(command)
-        subprocess.Popen(command)
-        command = "roslaunch motion_analysis_wrapper wrapper.launch"
-        command = shlex.split(command)
-        subprocess.Popen(command)
-        running_motion_analysis_human = True
-        sound_msg = Sound()
-        sound_msg.value = 0
-        sound_pub.publish(sound_msg)
+        if start:
+            print 'Starting motion_analysis'
+            command = "roslaunch motion_analysis human_event_detection.launch"
+            command = shlex.split(command)
+            subprocess.Popen(command)
+            command = "roslaunch motion_analysis_wrapper wrapper.launch"
+            command = shlex.split(command)
+            subprocess.Popen(command)
+            running_motion_analysis_human = True
+            sound_msg = Sound()
+            sound_msg.value = 0
+            sound_pub.publish(sound_msg)
     else:
-        print 'Stopping motion_analysis'
-        command = "rosnode kill motion_analysis"
-        command = shlex.split(command)
-        subprocess.Popen(command)
-        command = "rosnode kill motion_analysis_wrapper"
-        command = shlex.split(command)
-        subprocess.Popen(command)
-        running_motion_analysis_human = False
-        sound_msg = Sound()
-        sound_msg.value = 1
-        sound_pub.publish(sound_msg)
+        if stop:
+            print 'Stopping motion_analysis'
+            command = "rosnode kill motion_analysis"
+            command = shlex.split(command)
+            subprocess.Popen(command)
+            command = "rosnode kill motion_analysis_wrapper"
+            command = shlex.split(command)
+            subprocess.Popen(command)
+            running_motion_analysis_human = False
+            sound_msg = Sound()
+            sound_msg.value = 1
+            sound_pub.publish(sound_msg)
 
-def startStopMotionAnalysisObject():
+def startStopMotionAnalysisObject(start, stop):
     global running_motion_analysis_obj, sound_pub
     if not running_motion_analysis_obj:
-        print 'Starting motion_analysis'
-        command = "roslaunch motion_analysis object_event_detection.launch"
-        command = shlex.split(command)
-        subprocess.Popen(command)
-        command = "roslaunch motion_analysis_wrapper wrapper.launch"
-        command = shlex.split(command)
-        subprocess.Popen(command)
-        running_motion_analysis_obj = True
-        sound_msg = Sound()
-        sound_msg.value = 0
-        sound_pub.publish(sound_msg)
+        if start:
+            print 'Starting motion_analysis'
+            command = "roslaunch motion_analysis object_event_detection.launch"
+            command = shlex.split(command)
+            subprocess.Popen(command)
+            command = "roslaunch motion_analysis_wrapper wrapper.launch"
+            command = shlex.split(command)
+            subprocess.Popen(command)
+            running_motion_analysis_obj = True
+            sound_msg = Sound()
+            sound_msg.value = 0
+            sound_pub.publish(sound_msg)
     else:
-        print 'Stopping motion_analysis'
-        command = "rosnode kill motion_analysis"
-        command = shlex.split(command)
-        subprocess.Popen(command)
-        command = "rosnode kill motion_analysis_wrapper"
-        command = shlex.split(command)
-        subprocess.Popen(command)
-        running_motion_analysis_obj = False
-        sound_msg = Sound()
-        sound_msg.value = 1
-        sound_pub.publish(sound_msg)
+        if stop:
+            print 'Stopping motion_analysis'
+            command = "rosnode kill motion_analysis"
+            command = shlex.split(command)
+            subprocess.Popen(command)
+            command = "rosnode kill motion_analysis_wrapper"
+            command = shlex.split(command)
+            subprocess.Popen(command)
+            running_motion_analysis_obj = False
+            sound_msg = Sound()
+            sound_msg.value = 1
+            sound_pub.publish(sound_msg)
 
-def startStopRosVisual():
+def startStopRosVisual(start, stop):
     global running_ros_visual, sound_pub
     if not running_ros_visual:
-        print 'Starting ros_visual'
-        command = "roslaunch ros_visual ros_visual.launch"
-        command = shlex.split(command)
-        subprocess.Popen(command)
-        command = "roslaunch ros_visual_wrapper wrapper.launch"
-        command = shlex.split(command)
-        subprocess.Popen(command)
-        running_motion_analysis_obj = True
-        sound_msg = Sound()
-        sound_msg.value = 0
-        sound_pub.publish(sound_msg)
+        if start:
+            print 'Starting ros_visual'
+            command = "roslaunch ros_visual ros_visual.launch"
+            command = shlex.split(command)
+            subprocess.Popen(command)
+            command = "roslaunch ros_visual_wrapper wrapper.launch"
+            command = shlex.split(command)
+            subprocess.Popen(command)
+            running_motion_analysis_obj = True
+            sound_msg = Sound()
+            sound_msg.value = 0
+            sound_pub.publish(sound_msg)
     else:
-        print 'Stopping ros_visual'
-        command = "rosnode kill ros_visual"
-        command = shlex.split(command)
-        subprocess.Popen(command)
-        command = "rosnode kill ros_visual_wrapper"
-        command = shlex.split(command)
-        subprocess.Popen(command)
-        running_ros_visual = False
-        sound_msg = Sound()
-        sound_msg.value = 1
-        sound_pub.publish(sound_msg)
+        if stop:
+            print 'Stopping ros_visual'
+            command = "rosnode kill ros_visual"
+            command = shlex.split(command)
+            subprocess.Popen(command)
+            command = "rosnode kill ros_visual_wrapper"
+            command = shlex.split(command)
+            subprocess.Popen(command)
+            running_ros_visual = False
+            sound_msg = Sound()
+            sound_msg.value = 1
+            sound_pub.publish(sound_msg)
 
 
 if __name__ == '__main__':
     init() 
+
