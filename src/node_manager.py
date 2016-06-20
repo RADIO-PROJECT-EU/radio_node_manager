@@ -202,13 +202,13 @@ def joyCallback(msg):
     #Combinations of the above buttons are disabled.
     #You always have to press one of the buttons.
     if msg.buttons[0] == 1 and msg.buttons[1] == 0 and msg.buttons[2] == 0 and msg.buttons[3] == 0:
-        startStopHPR()
+        startStopHPR(True, True)
     elif msg.buttons[0] == 0 and msg.buttons[1] == 1 and msg.buttons[2] == 0 and msg.buttons[3] == 0:
-        startStopRosVisual()
+        startStopRosVisual(True, True)
     elif msg.buttons[0] == 0 and msg.buttons[1] == 0 and msg.buttons[2] == 1 and msg.buttons[3] == 0:
-        startStopMotionAnalysisHuman
+        startStopMotionAnalysisHuman(True, True)
     elif msg.buttons[0] == 0 and msg.buttons[1] == 0 and msg.buttons[2] == 0 and msg.buttons[3] == 1:
-        startStopMotionAnalysisObject()
+        startStopMotionAnalysisObject(True, True)
     print msg
 
 def startStopHPR(start, stop):
