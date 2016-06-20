@@ -319,14 +319,23 @@ def startStopRosVisual(start, stop):
             command = "roslaunch ros_visual_wrapper wrapper.launch"
             command = shlex.split(command)
             subprocess.Popen(command)
-            running_motion_analysis_obj = True
+            running_ros_visual = True
             sound_msg = Sound()
             sound_msg.value = 0
             sound_pub.publish(sound_msg)
     else:
         if stop:
             print 'Stopping ros_visual'
-            command = "rosnode kill ros_visual"
+            command = "rosnode kill decision_making"
+            command = shlex.split(command)
+            subprocess.Popen(command)
+	    command = "rosnode kill fusion"
+            command = shlex.split(command)
+            subprocess.Popen(command)
+	    command = "rosnode kill depth"
+            command = shlex.split(command)
+            subprocess.Popen(command)
+            command = "rosnode kill chroma"
             command = shlex.split(command)
             subprocess.Popen(command)
             command = "rosnode kill ros_visual_wrapper"
