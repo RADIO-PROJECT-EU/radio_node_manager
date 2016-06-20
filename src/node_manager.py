@@ -1,12 +1,15 @@
 #!/usr/bin/env python
+import smtplib
 import math, time
 import roslib, rospy
 import subprocess, shlex
 from sensor_msgs.msg import Joy
 from kobuki_msgs.msg import Sound
+from email.MIMEText import MIMEText
 from actionlib_msgs.msg import GoalID
 from kobuki_msgs.msg import SensorState
 from sensor_msgs.msg import BatteryState
+from email.MIMEMultipart import MIMEMultipart
 from actionlib_msgs.msg import GoalStatusArray
 from motion_detection_sensor_status_publisher.msg import SensorStatusMsg
 
@@ -68,7 +71,11 @@ def init():
     command = "rosrun map_server map_server /home/turtlebot/smart_room.yaml"
     command = shlex.split(command)
     subprocess.Popen(command)
-    time.sleep(2)
+    time.sleep(10)
+
+    sound_msg = Sound()
+    sound_msg.value = 6
+    sound_pub.publish(sound_msg)
     #map server also needed. It should be included in one of the above packages with the final map.
     #command = "roslaunch turtlebot_teleop logitech.launch"
     #command = shlex.split(command)
@@ -199,6 +206,29 @@ def cancelNavigationGoal():
     pub_stop.publish(GoalID())
     navigating = False
 
+def createReport():
+	global sound_pub
+	print 'report'
+	fromaddr = "roboskelncsr@gmail.com"
+	toaddr = "gstavrinos@iit.demokritos.gr"
+	msg = MIMEMultipart()
+	msg['From'] = fromaddr
+	msg['To'] = toaddr
+	msg['Subject'] = "Report today"
+	 
+	body = "lalala"
+	msg.attach(MIMEText(body, 'plain'))
+	 
+	server = smtplib.SMTP('smtp.gmail.com', 587)
+	server.starttls()
+	server.login(fromaddr, "reportt0d0cs")
+	text = msg.as_string()
+	server.sendmail(fromaddr, toaddr, text)
+	server.quit()
+	sound_msg = Sound()
+	sound_msg.value = 0
+	sound_pub.publish(sound_msg)
+
 
 def joyCallback(msg):
     #X starts/stops HPR
@@ -206,6 +236,7 @@ def joyCallback(msg):
     #B starts/stops motion_analysis for human
     #Y starts/stops motion_analysis for object
     #Back/Select to cancel navigation goal
+    #Start sends a report based on today's date.
     #Combinations of the A-B-X-Y buttons are disabled.
     #You always have to press one of the buttons.
     if msg.buttons[0] == 1 and msg.buttons[1] == 0 and msg.buttons[2] == 0 and msg.buttons[3] == 0:
@@ -218,6 +249,8 @@ def joyCallback(msg):
         startStopMotionAnalysisObject(True, True)
     if msg.buttons[8] == 1:
         cancelNavigationGoal()
+    if msg.buttons[9] == 1:
+        createReport()
     print msg
 
 def startStopHPR(start, stop):
