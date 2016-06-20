@@ -176,15 +176,14 @@ def pcBatteryCallback(msg):
 
 
 def kobukiBatteryCallback(msg):
-    global kobuki_max_charge, pub_stop, charging, pc_needs_to_charge
+    global kobuki_max_charge, charging, pc_needs_to_charge, navigating
     #print msg
     if (msg.battery/kobuki_max_charge*100) < 0.05 or pc_needs_to_charge: #less that 5% battery on kobuki
         if msg.charger == 0:
             charging = False
             print 'I am not charging, and I definitely need to!'
             if navigating:
-                navigating = False
-                pub_stop.publish(GoalID())
+                cancelNavigationGoal()
                 #TODO
                 print 'Stopping motion_analysis'
                 print 'Stopping HPR'
@@ -194,12 +193,20 @@ def kobukiBatteryCallback(msg):
             print 'Charging'
             charging = True
 
+def cancelNavigationGoal():
+    global pub_stop, navigating
+    print 'Cancelling navigation goal'
+    pub_stop.publish(GoalID())
+    navigating = False
+
+
 def joyCallback(msg):
     #X starts/stops HPR
     #A starts/stops ros_visual
     #B starts/stops motion_analysis for human
     #Y starts/stops motion_analysis for object
-    #Combinations of the above buttons are disabled.
+    #Back/Select to cancel navigation goal
+    #Combinations of the A-B-X-Y buttons are disabled.
     #You always have to press one of the buttons.
     if msg.buttons[0] == 1 and msg.buttons[1] == 0 and msg.buttons[2] == 0 and msg.buttons[3] == 0:
         startStopHPR(True, True)
@@ -209,6 +216,8 @@ def joyCallback(msg):
         startStopMotionAnalysisHuman(True, True)
     elif msg.buttons[0] == 0 and msg.buttons[1] == 0 and msg.buttons[2] == 0 and msg.buttons[3] == 1:
         startStopMotionAnalysisObject(True, True)
+    if msg.buttons[8] == 1:
+        cancelNavigationGoal()
     print msg
 
 def startStopHPR(start, stop):
