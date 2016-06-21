@@ -1,8 +1,11 @@
 #!/usr/bin/env python
+import os
+import rospkg
 import smtplib
 import math, time
 import roslib, rospy
 import subprocess, shlex
+from datetime import datetime
 from sensor_msgs.msg import Joy
 from kobuki_msgs.msg import Sound
 from email.MIMEText import MIMEText
@@ -71,7 +74,7 @@ def init():
     command = "rosrun map_server map_server /home/turtlebot/smart_room.yaml"
     command = shlex.split(command)
     subprocess.Popen(command)
-    time.sleep(10)
+    time.sleep(15)
 
     sound_msg = Sound()
     sound_msg.value = 6
@@ -211,13 +214,68 @@ def createReport():
 	print 'report'
 	fromaddr = "roboskelncsr@gmail.com"
 	toaddr = "gstavrinos@iit.demokritos.gr"
+    	subject = "Medical Report as of "+datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 	msg = MIMEMultipart()
 	msg['From'] = fromaddr
 	msg['To'] = toaddr
-	msg['Subject'] = "Report today"
+	msg['Subject'] = subject
 	 
-	body = "lalala"
-	msg.attach(MIMEText(body, 'plain'))
+	body = subject+"\n\n\n"
+
+    	body += "Getting out of bed and pill intake:\n"
+
+    	rospack = rospkg.RosPack()
+    	path = rospack.get_path('motion_analysis_wrapper')+'/logs/'
+	files = []
+	found_file = False
+    	for i in os.listdir(path):
+        	if os.path.isfile(os.path.join(path,i)) and 'official_log_'+datetime.today().strftime("%d-%m-%Y") in i:
+			found_file = True
+            		files.append(i)
+
+	if found_file:
+    		for f in files:
+        		with open(path+f, 'r') as myfile:
+            			body += myfile.read()
+	files = []
+	found_file = False
+
+    	body += "---\n\n\n"
+
+    	body += "Walking 4 meters:\n"
+
+    	path = rospack.get_path('hpr_wrapper')+'/logs/'
+    	for i in os.listdir(path):
+        	if os.path.isfile(os.path.join(path,i)) and 'official_log_'+datetime.today().strftime("%d-%m-%Y") in i:
+            		found_file = True
+			files.append(i)
+
+	if found_file:
+    		for f in files:
+        		with open(path+f, 'r') as myfile:
+            			body += myfile.read()
+
+	files = []
+	found_file = False
+
+    	body += "---\n\n\n"
+
+    	body += "Standing from a chair:\n"
+
+    	path = rospack.get_path('ros_visual_wrapper')+'/logs/'
+    	for i in os.listdir(path):
+        	if os.path.isfile(os.path.join(path,i)) and 'official_log_'+datetime.today().strftime("%d-%m-%Y") in i:
+            		found_file = True
+			files.append(i)
+
+	if found_file:
+    		for f in files:
+        		with open(path+f, 'r') as myfile:
+            			body += myfile.read()
+
+    	body += "---\n\n\n"
+	
+    	msg.attach(MIMEText(body, 'plain'))
 	 
 	server = smtplib.SMTP('smtp.gmail.com', 587)
 	server.starttls()
@@ -251,6 +309,15 @@ def joyCallback(msg):
         cancelNavigationGoal()
     if msg.buttons[9] == 1:
         createReport()
+    if msg.buttons[5] == 1:
+	command = "rostopic pub /motion_analysis/object_state std_msgs/Int32 2"
+	command = shlex.split(command)
+	subprocess.Popen(command)
+	sound_msg = Sound()
+	sound_msg.value = 0
+	sound_pub.publish(sound_msg)
+)
+
     print msg
 
 def startStopHPR(start, stop):
