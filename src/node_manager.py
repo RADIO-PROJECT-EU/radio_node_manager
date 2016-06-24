@@ -7,6 +7,7 @@ import roslib, rospy
 import subprocess, shlex
 from datetime import datetime
 from sensor_msgs.msg import Joy
+from std_msgs.msg import Int32
 from kobuki_msgs.msg import Sound
 from email.MIMEText import MIMEText
 from actionlib_msgs.msg import GoalID
@@ -14,7 +15,9 @@ from kobuki_msgs.msg import SensorState
 from sensor_msgs.msg import BatteryState
 from email.MIMEMultipart import MIMEMultipart
 from actionlib_msgs.msg import GoalStatusArray
+from geometry_msgs.msg import PoseWithCovarianceStamped, Quaternion
 from motion_detection_sensor_status_publisher.msg import SensorStatusMsg
+from tf.transformations import quaternion_from_euler, euler_from_quaternion
 
 running_motion_analysis_human = False
 running_motion_analysis_obj = False
@@ -53,7 +56,7 @@ def init():
     if check_batteries:
         #pc_battery_sub = rospy.Subscriber('placeholder', PlaceHolderMsg, pcBatteryCallback)
         kobuki_battery_sub = rospy.Subscriber('mobile_base/sensors/core', SensorState, kobukiBatteryCallback)
-
+    rospy.Subscriber('emergency_stop', Int32, emergencyShutdown)
     #TODO ask the main server about what the initial state should be
     #Set initial pose on launch based on the main server's last saved position.
     #Maybe the robot itself could do this too. A save_current_state node would be useful.
@@ -71,42 +74,100 @@ def init():
     command = shlex.split(command)
     subprocess.Popen(command)
     time.sleep(2)
-    command = "rosrun map_server map_server /home/turtlebot/smart_room.yaml"
+    command = "rosrun map_server map_server /home/turtlebot/test1.yaml"
     command = shlex.split(command)
     subprocess.Popen(command)
     time.sleep(15)
-
+    
+    pub_start = rospy.Publisher('initialpose', PoseWithCovarianceStamped, queue_size=10)
+    start_point = PoseWithCovarianceStamped()
+    #start point position x
+    start_point.pose.pose.position.x = -6.329
+    #start point position y     
+    start_point.pose.pose.position.y = 10.087
+    start_point.header.stamp = rospy.Time.now()
+    #start_point.pose.pose.orientation.z = -2.122
+    quat = quaternion_from_euler(0.0, 0.0, -2.122) # roll, pitch, yaw
+    start_point.pose.pose.orientation = Quaternion(*quat.tolist())
+    #start_point.pose.pose.orientation.w = 0
+    start_point.header.frame_id = 'map'
+    rospy.sleep(1)
+    pub_start.publish(start_point)
     sound_msg = Sound()
     sound_msg.value = 6
     sound_pub.publish(sound_msg)
-    #map server also needed. It should be included in one of the above packages with the final map.
-    #command = "roslaunch turtlebot_teleop logitech.launch"
-    #command = shlex.split(command)
-    #subprocess.Popen(command)
 
     while not rospy.is_shutdown():  
         rospy.spin()
     #we reach this point only after Ctrl-C
-    command = "rosnode kill turtlebot_teleop"
-    command = shlex.split(command)
-    subprocess.Popen(command)
-    command = "rosnode kill map_server"
-    command = shlex.split(command)
-    subprocess.Popen(command)
-    command = "rosnode kill move_base"
-    command = shlex.split(command)
-    subprocess.Popen(command)
+    startStopHPR(False, True)
+    startStopRosVisual(False, True)
+    startStopMotionAnalysisHuman(False, True)
+    startStopMotionAnalysisObject(False, True)
+
     command = "rosnode kill amcl"
-    command = shlex.split(command)
+    command = shlex.split(command) 
+    subprocess.Popen(command) 
+    command = "rosnode kill app_manager"
+    command = shlex.split(command) 
+    subprocess.Popen(command) 
+    command = "rosnode kill bumper2pointcloud"
+    command = shlex.split(command) 
+    subprocess.Popen(command) 
+    command = "rosnode kill capability_server"
+    command = shlex.split(command) 
+    subprocess.Popen(command) 
+    command = "rosnode kill capability_server_nodelet_manager"
+    command = shlex.split(command) 
+    subprocess.Popen(command) 
+    command = "rosnode kill chroma"
+    command = shlex.split(command) 
+    subprocess.Popen(command) 
+    command = "rosnode kill cmd_vel_mux"
+    command = shlex.split(command) 
+    subprocess.Popen(command) 
+    command = "rosnode kill diagnostic_aggregator"
+    command = shlex.split(command) 
+    subprocess.Popen(command) 
+    command = "rosnode kill hokuyo"
+    command = shlex.split(command) 
     subprocess.Popen(command)
-    command = "rosnode kill turtlebot_teleop"
-    command = shlex.split(command)
-    subprocess.Popen(command)
-    command = "rosnode kill turtlebot_radio_bringup"
-    command = shlex.split(command)
-    subprocess.Popen(command)
-
-
+    command = "rosnode kill interactions"
+    command = shlex.split(command) 
+    subprocess.Popen(command) 
+    command = "rosnode kill joystick"
+    command = shlex.split(command) 
+    subprocess.Popen(command) 
+    command = "rosnode kill kobuki_safety_controller"
+    command = shlex.split(command) 
+    subprocess.Popen(command)  
+    command = "rosnode kill map_server"
+    command = shlex.split(command) 
+    subprocess.Popen(command) 
+    command = "rosnode kill mobile_base"
+    command = shlex.split(command) 
+    subprocess.Popen(command) 
+    command = "rosnode kill mobile_base_nodelet_manager"
+    command = shlex.split(command) 
+    subprocess.Popen(command) 
+    command = "rosnode kill move_base"
+    command = shlex.split(command) 
+    subprocess.Popen(command) 
+    command = "rosnode kill navigation_velocity_smoother"
+    command = shlex.split(command) 
+    subprocess.Popen(command) 
+    command = "rosnode kill radio_node_manager"
+    command = shlex.split(command) 
+    subprocess.Popen(command) 
+    command = "rosnode kill teleop_velocity_smoother"
+    command = shlex.split(command) 
+    subprocess.Popen(command) 
+    command = "rosnode kill turtlebot_teleop_joystick"
+    command = shlex.split(command) 
+    subprocess.Popen(command) 
+    command = "rosnode kill xtion_pro_cam"
+    command = shlex.split(command) 
+    subprocess.Popen(command)  
 
 '''
 0   # The goal has yet to be processed by the action server
@@ -204,10 +265,14 @@ def kobukiBatteryCallback(msg):
             charging = True
 
 def cancelNavigationGoal():
-    global pub_stop, navigating
+    global pub_stop, navigating, sound_pub
     print 'Cancelling navigation goal'
     pub_stop.publish(GoalID())
     navigating = False
+    sound_msg = Sound()
+    sound_msg.value = 0
+    sound_pub.publish(sound_msg)
+
 
 def createReport():
 	global sound_pub
@@ -297,17 +362,17 @@ def joyCallback(msg):
     #Start sends a report based on today's date.
     #Combinations of the A-B-X-Y buttons are disabled.
     #You always have to press one of the buttons.
-    if msg.buttons[0] == 1 and msg.buttons[1] == 0 and msg.buttons[2] == 0 and msg.buttons[3] == 0:
+    if msg.buttons[0] == 0 and msg.buttons[1] == 0 and msg.buttons[2] == 1 and msg.buttons[3] == 0:
         startStopHPR(True, True)
-    elif msg.buttons[0] == 0 and msg.buttons[1] == 1 and msg.buttons[2] == 0 and msg.buttons[3] == 0:
+    elif msg.buttons[0] == 1 and msg.buttons[1] == 0 and msg.buttons[2] == 0 and msg.buttons[3] == 0:
         startStopRosVisual(True, True)
-    elif msg.buttons[0] == 0 and msg.buttons[1] == 0 and msg.buttons[2] == 1 and msg.buttons[3] == 0:
+    elif msg.buttons[0] == 0 and msg.buttons[1] == 1 and msg.buttons[2] == 0 and msg.buttons[3] == 0:
         startStopMotionAnalysisHuman(True, True)
     elif msg.buttons[0] == 0 and msg.buttons[1] == 0 and msg.buttons[2] == 0 and msg.buttons[3] == 1:
         startStopMotionAnalysisObject(True, True)
-    if msg.buttons[8] == 1:
+    if msg.buttons[6] == 1:
         cancelNavigationGoal()
-    if msg.buttons[9] == 1:
+    if msg.buttons[7] == 1:
         createReport()
     if msg.buttons[5] == 1:
 	command = "rostopic pub /motion_analysis/object_state std_msgs/Int32 2"
@@ -316,7 +381,18 @@ def joyCallback(msg):
 	sound_msg = Sound()
 	sound_msg.value = 0
 	sound_pub.publish(sound_msg)
-)
+    if msg.buttons[10] == 1:
+	command = "roslaunch kobuki_auto_docking minimal.launch"
+        command = shlex.split(command)
+        subprocess.Popen(command)
+        command = "roslaunch kobuki_auto_docking activate.launch"
+        command = shlex.split(command)
+        subprocess.Popen(command)
+
+        sound_msg = Sound()
+        sound_msg.value = 0
+        sound_pub.publish(sound_msg)
+
 
     print msg
 
@@ -455,6 +531,15 @@ def startStopRosVisual(start, stop):
             sound_msg.value = 1
             sound_pub.publish(sound_msg)
 
+def emergencyShutdown(msg):
+	#command = '/usr/bin/dbus-send --system --print-reply --dest="org.freedesktop.ConsoleKit" /org/freedesktop/ConsoleKit/Manager org.freedesktop.ConsoleKit.Manager.Stop'
+	command = "rosnode kill mobile_base_nodelet_manager"
+        command = shlex.split(command)
+        subprocess.Popen(command)
+
+	command = "rosnode kill -a"
+        command = shlex.split(command)
+        subprocess.Popen(command)
 
 if __name__ == '__main__':
     init() 
