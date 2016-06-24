@@ -277,6 +277,7 @@ def cancelNavigationGoal():
 def createReport():
 	global sound_pub
 	print 'report'
+	files_to_remove = []
 	fromaddr = "roboskelncsr@gmail.com"
 	toaddr = "gstavrinos@iit.demokritos.gr"
     	subject = "Medical Report as of "+datetime.now().strftime("%d/%m/%Y %H:%M:%S")
@@ -297,6 +298,7 @@ def createReport():
         	if os.path.isfile(os.path.join(path,i)) and 'official_log_'+datetime.today().strftime("%d-%m-%Y") in i:
 			found_file = True
             		files.append(i)
+			files_to_remove.append(path+i)
 
 	if found_file:
     		for f in files:
@@ -314,6 +316,7 @@ def createReport():
         	if os.path.isfile(os.path.join(path,i)) and 'official_log_'+datetime.today().strftime("%d-%m-%Y") in i:
             		found_file = True
 			files.append(i)
+			files_to_remove.append(path+i)
 
 	if found_file:
     		for f in files:
@@ -332,6 +335,7 @@ def createReport():
         	if os.path.isfile(os.path.join(path,i)) and 'official_log_'+datetime.today().strftime("%d-%m-%Y") in i:
             		found_file = True
 			files.append(i)
+			files_to_remove(path+i)
 
 	if found_file:
     		for f in files:
@@ -348,6 +352,9 @@ def createReport():
 	text = msg.as_string()
 	server.sendmail(fromaddr, toaddr, text)
 	server.quit()
+	for f in files_to_remove:
+		os.remove(f)
+		print 'Deleted',f
 	sound_msg = Sound()
 	sound_msg.value = 0
 	sound_pub.publish(sound_msg)
