@@ -6,8 +6,8 @@ import math, time
 import roslib, rospy
 import subprocess, shlex
 from datetime import datetime
-from sensor_msgs.msg import Joy
 from std_msgs.msg import Int32
+from sensor_msgs.msg import Joy
 from kobuki_msgs.msg import Sound
 from email.MIMEText import MIMEText
 from actionlib_msgs.msg import GoalID
@@ -15,6 +15,7 @@ from kobuki_msgs.msg import SensorState
 from sensor_msgs.msg import BatteryState
 from email.MIMEMultipart import MIMEMultipart
 from actionlib_msgs.msg import GoalStatusArray
+from move_base_msgs.msg import MoveBaseActionGoal
 from geometry_msgs.msg import PoseWithCovarianceStamped, Quaternion
 from motion_detection_sensor_status_publisher.msg import SensorStatusMsg
 from tf.transformations import quaternion_from_euler, euler_from_quaternion
@@ -35,6 +36,8 @@ charging = False
 sound_pub = None
 goal_point = []
 joy_sub = None
+gym_x = -13.982
+gym_y = 18.833
 
 #first_detect becomes false the first time we see 'ok'
 #from the motion detection sensor, to ensure that
@@ -52,6 +55,7 @@ def init():
     nav_status_sub = rospy.Subscriber('move_base/status', GoalStatusArray, currentNavStatus)
     joy_sub = rospy.Subscriber('joy', Joy, joyCallback)
     sound_pub = rospy.Publisher('mobile_base/commands/sound', Sound)
+    goal_subscriber = rospy.Subscriber("/move_base/goal", MoveBaseActionGoal, getGoalPoint)
     pub_stop = rospy.Publisher('move_base/cancel', GoalID, queue_size=10)
     if check_batteries:
         #pc_battery_sub = rospy.Subscriber('placeholder', PlaceHolderMsg, pcBatteryCallback)
@@ -226,14 +230,16 @@ def motionSensorStatus(ssm):
         startStopHPR(True, False)
         startStopMotionAnalysisHuman(True, False)
 
-#TODO
-#Get the goal from tha radio GUI and then decide 
-#if we should forward it to the navigation.
-#e.g. if we are still charging and we are below a certain threshold,
-#just send a message to the user informing them about our battery state.
-def goalHandler(goal_msg):
-    print goal_msg
-    #pub_goal = rospy.Publisher('move_base_simple/goal', PoseStamped, queue_size=10)
+#Check if the point equals the Gym point so that we can count how many times
+#the gym button was clicked.
+def getGoalPoint(goal_msg):
+    global gym_x, gym_y
+    if goal_msg.goal.target_pose.pose.position.x == gym_x and goal_msg.goal.target_pose.pose.position.y == gym_y:
+        rospack = rospkg.RosPack()
+        path = rospack.get_path("radio_node_manager")+'/logs/'
+        dt = datetime.now()
+        with open(path+'official_log_'+datetime.today().strftime("%d-%m-%Y")+'.log','ab+') as f:
+            f.write("Went to the gym at "+dt.strftime("%H:%M:%S")+"\n")
 
 #this method only changes the pc_needs_to_charge value. The rest are left for
 #the kobukiBatteryCallback method.
@@ -279,11 +285,11 @@ def createReport():
 	print 'report'
 	files_to_remove = []
 	fromaddr = "roboskelncsr@gmail.com"
-	toaddr = "gstavrinos@iit.demokritos.gr"
+	toaddr = ["gstavrinos@iit.demokritos.gr", "gs.juggle@gmail.com"]
     	subject = "Medical Report as of "+datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 	msg = MIMEMultipart()
 	msg['From'] = fromaddr
-	msg['To'] = toaddr
+	msg['To'] = ", ".join(toaddr)
 	msg['Subject'] = subject
 	 
 	body = subject+"\n\n\n"
@@ -323,28 +329,49 @@ def createReport():
         		with open(path+f, 'r') as myfile:
             			body += myfile.read()
 
-	files = []
-	found_file = False
+    files = []
+    found_file = False
 
-    	body += "---\n\n\n"
+        body += "---\n\n\n"
 
-    	body += "Standing from a chair:\n"
+        body += "Standing from a chair:\n"
 
-    	path = rospack.get_path('ros_visual_wrapper')+'/logs/'
-    	for i in os.listdir(path):
-        	if os.path.isfile(os.path.join(path,i)) and 'official_log_'+datetime.today().strftime("%d-%m-%Y") in i:
-            		found_file = True
-			files.append(i)
-			files_to_remove(path+i)
+        path = rospack.get_path('ros_visual_wrapper')+'/logs/'
+        for i in os.listdir(path):
+            if os.path.isfile(os.path.join(path,i)) and 'official_log_'+datetime.today().strftime("%d-%m-%Y") in i:
+                    found_file = True
+            files.append(i)
+            files_to_remove.append(path+i)
 
-	if found_file:
-    		for f in files:
-        		with open(path+f, 'r') as myfile:
-            			body += myfile.read()
+    if found_file:
+            for f in files:
+                with open(path+f, 'r') as myfile:
+                        body += myfile.read()
 
-    	body += "---\n\n\n"
-	
-    	msg.attach(MIMEText(body, 'plain'))
+        body += "---\n\n\n"
+    
+        msg.attach(MIMEText(body, 'plain'))
+
+    files = []
+    found_file = False
+
+        body += "---\n\n\n"
+
+        path = rospack.get_path('radio_node_manager')+'/logs/'
+        for i in os.listdir(path):
+            if os.path.isfile(os.path.join(path,i)) and 'official_log_'+datetime.today().strftime("%d-%m-%Y") in i:
+                    found_file = True
+            files.append(i)
+            files_to_remove.append(path+i)
+
+    if found_file:
+            for f in files:
+                with open(path+f, 'r') as myfile:
+                        body += myfile.read()
+
+        body += "---\n\n\n"
+    
+        msg.attach(MIMEText(body, 'plain'))
 	 
 	server = smtplib.SMTP('smtp.gmail.com', 587)
 	server.starttls()
@@ -382,14 +409,14 @@ def joyCallback(msg):
     if msg.buttons[7] == 1:
         createReport()
     if msg.buttons[5] == 1:
-	command = "rostopic pub /motion_analysis/object_state std_msgs/Int32 2"
-	command = shlex.split(command)
-	subprocess.Popen(command)
-	sound_msg = Sound()
-	sound_msg.value = 0
-	sound_pub.publish(sound_msg)
+        command = "rostopic pub /motion_analysis/object_state std_msgs/Int32 2"
+        command = shlex.split(command)
+        subprocess.Popen(command)
+        sound_msg = Sound()
+        sound_msg.value = 0
+        sound_pub.publish(sound_msg)
     if msg.buttons[10] == 1:
-	command = "roslaunch kobuki_auto_docking minimal.launch"
+        command = "roslaunch kobuki_auto_docking minimal.launch"
         command = shlex.split(command)
         subprocess.Popen(command)
         command = "roslaunch kobuki_auto_docking activate.launch"
@@ -521,10 +548,10 @@ def startStopRosVisual(start, stop):
             command = "rosnode kill decision_making"
             command = shlex.split(command)
             subprocess.Popen(command)
-	    command = "rosnode kill fusion"
+            command = "rosnode kill fusion"
             command = shlex.split(command)
             subprocess.Popen(command)
-	    command = "rosnode kill depth"
+            command = "rosnode kill depth"
             command = shlex.split(command)
             subprocess.Popen(command)
             command = "rosnode kill chroma"
@@ -540,13 +567,13 @@ def startStopRosVisual(start, stop):
 
 def emergencyShutdown(msg):
 	#command = '/usr/bin/dbus-send --system --print-reply --dest="org.freedesktop.ConsoleKit" /org/freedesktop/ConsoleKit/Manager org.freedesktop.ConsoleKit.Manager.Stop'
-	command = "rosnode kill mobile_base_nodelet_manager"
-        command = shlex.split(command)
-        subprocess.Popen(command)
+    command = "rosnode kill mobile_base_nodelet_manager"
+    command = shlex.split(command)
+    subprocess.Popen(command)
 
-	command = "rosnode kill -a"
-        command = shlex.split(command)
-        subprocess.Popen(command)
+    command = "rosnode kill -a"
+    command = shlex.split(command)
+    subprocess.Popen(command)
 
 if __name__ == '__main__':
     init() 
