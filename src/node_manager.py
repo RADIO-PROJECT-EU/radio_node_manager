@@ -286,7 +286,7 @@ def createReport():
 	files_to_remove = []
 	fromaddr = "roboskelncsr@gmail.com"
 	toaddr = ["gstavrinos@iit.demokritos.gr", "gs.juggle@gmail.com"]
-    	subject = "Medical Report as of "+datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    subject = "Medical Report as of "+datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 	msg = MIMEMultipart()
 	msg['From'] = fromaddr
 	msg['To'] = ", ".join(toaddr)
@@ -294,17 +294,17 @@ def createReport():
 	 
 	body = subject+"\n\n\n"
 
-    	body += "Getting out of bed and pill intake:\n"
+	body += "Getting out of bed and pill intake:\n"
 
-    	rospack = rospkg.RosPack()
-    	path = rospack.get_path('motion_analysis_wrapper')+'/logs/'
+	rospack = rospkg.RosPack()
+	path = rospack.get_path('motion_analysis_wrapper')+'/logs/'
 	files = []
 	found_file = False
-    	for i in os.listdir(path):
-        	if os.path.isfile(os.path.join(path,i)) and 'official_log_'+datetime.today().strftime("%d-%m-%Y") in i:
-			found_file = True
-            		files.append(i)
-			files_to_remove.append(path+i)
+	for i in os.listdir(path):
+    	if os.path.isfile(os.path.join(path,i)) and 'official_log_'+datetime.today().strftime("%d-%m-%Y") in i:
+		found_file = True
+        		files.append(i)
+		files_to_remove.append(path+i)
 
 	if found_file:
     		for f in files:
@@ -313,66 +313,66 @@ def createReport():
 	files = []
 	found_file = False
 
-    	body += "---\n\n\n"
+	body += "---\n\n\n"
 
-    	body += "Walking 4 meters:\n"
+	body += "Walking 4 meters:\n"
 
-    	path = rospack.get_path('hpr_wrapper')+'/logs/'
-    	for i in os.listdir(path):
-        	if os.path.isfile(os.path.join(path,i)) and 'official_log_'+datetime.today().strftime("%d-%m-%Y") in i:
-            		found_file = True
-			files.append(i)
-			files_to_remove.append(path+i)
+	path = rospack.get_path('hpr_wrapper')+'/logs/'
+	for i in os.listdir(path):
+    	if os.path.isfile(os.path.join(path,i)) and 'official_log_'+datetime.today().strftime("%d-%m-%Y") in i:
+        		found_file = True
+		files.append(i)
+		files_to_remove.append(path+i)
 
 	if found_file:
     		for f in files:
         		with open(path+f, 'r') as myfile:
             			body += myfile.read()
 
-    files = []
-    found_file = False
+	files = []
+	found_file = False
 
-        body += "---\n\n\n"
+    body += "---\n\n\n"
 
-        body += "Standing from a chair:\n"
+    body += "Standing from a chair:\n"
 
-        path = rospack.get_path('ros_visual_wrapper')+'/logs/'
-        for i in os.listdir(path):
-            if os.path.isfile(os.path.join(path,i)) and 'official_log_'+datetime.today().strftime("%d-%m-%Y") in i:
-                    found_file = True
-            files.append(i)
-            files_to_remove.append(path+i)
+    path = rospack.get_path('ros_visual_wrapper')+'/logs/'
+    for i in os.listdir(path):
+        if os.path.isfile(os.path.join(path,i)) and 'official_log_'+datetime.today().strftime("%d-%m-%Y") in i:
+                found_file = True
+        files.append(i)
+        files_to_remove.append(path+i)
 
-    if found_file:
-            for f in files:
-                with open(path+f, 'r') as myfile:
-                        body += myfile.read()
+	if found_file:
+        for f in files:
+            with open(path+f, 'r') as myfile:
+                    body += myfile.read()
 
-        body += "---\n\n\n"
-    
-        msg.attach(MIMEText(body, 'plain'))
+    body += "---\n\n\n"
 
-    files = []
-    found_file = False
+    msg.attach(MIMEText(body, 'plain'))
 
-        body += "---\n\n\n"
+	files = []
+	found_file = False
 
-        path = rospack.get_path('radio_node_manager')+'/logs/'
-        for i in os.listdir(path):
-            if os.path.isfile(os.path.join(path,i)) and 'official_log_'+datetime.today().strftime("%d-%m-%Y") in i:
-                    found_file = True
-            files.append(i)
-            files_to_remove.append(path+i)
+    body += "---\n\n\n"
 
-    if found_file:
-            for f in files:
-                with open(path+f, 'r') as myfile:
-                        body += myfile.read()
+    path = rospack.get_path('radio_node_manager')+'/logs/'
+    for i in os.listdir(path):
+        if os.path.isfile(os.path.join(path,i)) and 'official_log_'+datetime.today().strftime("%d-%m-%Y") in i:
+                found_file = True
+        files.append(i)
+        files_to_remove.append(path+i)
 
-        body += "---\n\n\n"
-    
-        msg.attach(MIMEText(body, 'plain'))
-	 
+	if found_file:
+        for f in files:
+            with open(path+f, 'r') as myfile:
+                    body += myfile.read()
+
+    body += "---\n\n\n"
+
+    msg.attach(MIMEText(body, 'plain'))
+ 
 	server = smtplib.SMTP('smtp.gmail.com', 587)
 	server.starttls()
 	server.login(fromaddr, "reportt0d0cs")
