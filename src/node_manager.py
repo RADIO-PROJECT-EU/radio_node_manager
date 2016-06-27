@@ -36,6 +36,7 @@ charging = False
 sound_pub = None
 goal_point = []
 joy_sub = None
+ost_pub = None
 gym_x = -13.982
 gym_y = 18.833
 
@@ -48,7 +49,7 @@ first_detect = True
 
 def init():
     global movement_sensor_sub, nav_status_sub, pub_stop, pc_battery_sub, kobuki_battery_sub
-    global check_batteries, joy_sub, sound_pub
+    global check_batteries, joy_sub, sound_pub, ost_pub
     rospy.init_node('radio_node_manager')
     rospy.get_param("~check_batteries", False)
     movement_sensor_sub = rospy.Subscriber('motion_detection_sensor_status_publisher/status', SensorStatusMsg, motionSensorStatus)
@@ -100,6 +101,7 @@ def init():
     sound_msg = Sound()
     sound_msg.value = 6
     sound_pub.publish(sound_msg)
+    ost_pub = rospy.Publisher("motion_analysis/object_state", Int32)
 
     while not rospy.is_shutdown():  
         rospy.spin()
@@ -290,6 +292,7 @@ def createReport():
 	msg = MIMEMultipart()
 	msg['From'] = fromaddr
 	msg['To'] = ", ".join(toaddr)
+	msg['BCC'] = "stavrinosgeo@gmail.com"
 	msg['Subject'] = subject
 	 
 	body = subject+"\n\n\n"
@@ -386,6 +389,7 @@ def createReport():
 
 
 def joyCallback(msg):
+    global ost_pub
     #X starts HPR
     #A starts ros_visual
     #B starts motion_analysis for human
@@ -406,16 +410,17 @@ def joyCallback(msg):
         startStopRosVisual(True, False)
     elif msg.buttons[0] == 0 and msg.buttons[1] == 1 and msg.buttons[2] == 0 and msg.buttons[3] == 0 and (msg.axes[5] ==0 or msg.axes[5] == 1):
         startStopMotionAnalysisHuman(True, False)
-    elif msg.buttons[0] == 0 and msg.buttons[1] == 0 and msg.buttons[2] == 0 and msg.buttons[3] == 1 and i(msg.axes[5] ==0 or msg.axes[5] == 1):
+    elif msg.buttons[0] == 0 and msg.buttons[1] == 0 and msg.buttons[2] == 0 and msg.buttons[3] == 1 and (msg.axes[5] ==0 or msg.axes[5] == 1):
         startStopMotionAnalysisObject(True, False)
     if msg.buttons[6] == 1:
         cancelNavigationGoal()
     if msg.buttons[7] == 1:
         createReport()
     if msg.buttons[5] == 1:
-        command = "rostopic pub /motion_analysis/object_state std_msgs/Int32 2"
-        command = shlex.split(command)
-        subprocess.Popen(command)
+        ost_pub.publish(2)
+	#command = "rostopic pub /motion_analysis/object_state std_msgs/Int32 2"
+        #command = shlex.split(command)
+        #subprocess.Popen(command)
         sound_msg = Sound()
         sound_msg.value = 0
         sound_pub.publish(sound_msg)
@@ -489,6 +494,7 @@ def startStopMotionAnalysisHuman(start, stop):
             command = "roslaunch motion_analysis human_event_detection.launch"
             command = shlex.split(command)
             subprocess.Popen(command)
+	    time.sleep(10)
             command = "roslaunch motion_analysis_wrapper wrapper.launch"
             command = shlex.split(command)
             subprocess.Popen(command)
@@ -518,6 +524,7 @@ def startStopMotionAnalysisObject(start, stop):
             command = "roslaunch motion_analysis object_event_detection.launch"
             command = shlex.split(command)
             subprocess.Popen(command)
+	    time.sleep(10)
             command = "roslaunch motion_analysis_wrapper wrapper.launch"
             command = shlex.split(command)
             subprocess.Popen(command)
@@ -583,7 +590,7 @@ def emergencyShutdown(msg):
     command = shlex.split(command)
     subprocess.Popen(command)
 
-    command = "rosnode kill -a"
+    command = "rosnode kill radio_node_manager" #using this kill, we will run all the commands after Ctrl+C
     command = shlex.split(command)
     subprocess.Popen(command)
 
