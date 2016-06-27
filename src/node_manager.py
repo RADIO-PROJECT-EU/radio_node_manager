@@ -81,7 +81,7 @@ def init():
     command = "rosrun map_server map_server /home/turtlebot/test1.yaml"
     command = shlex.split(command)
     subprocess.Popen(command)
-    time.sleep(15)
+    time.sleep(20)
     
     pub_start = rospy.Publisher('initialpose', PoseWithCovarianceStamped, queue_size=10)
     start_point = PoseWithCovarianceStamped()
@@ -353,8 +353,6 @@ def createReport():
 	files = []
 	found_file = False
 
-	body += "---\n\n\n"
-
 	body += "Gym info:\n"
 
 	path = rospack.get_path('radio_node_manager')+'/logs/'
@@ -388,22 +386,28 @@ def createReport():
 
 
 def joyCallback(msg):
-    #X starts/stops HPR
-    #A starts/stops ros_visual
-    #B starts/stops motion_analysis for human
-    #Y starts/stops motion_analysis for object
+    #X starts HPR
+    #A starts ros_visual
+    #B starts motion_analysis for human
+    #Y starts motion_analysis for object
     #Back/Select to cancel navigation goal
     #Start sends a report based on today's date.
+    #R1 pills are placed to the correct position
+    #RightStick[Pressed] enables auto-docking
+    #R2+X stops HPR
+    #R2+A stops ros_visual
+    #R2+B stops motion_analysis for human
+    #R2+Y stops motion_analysis for object
     #Combinations of the A-B-X-Y buttons are disabled.
     #You always have to press one of the buttons.
-    if msg.buttons[0] == 0 and msg.buttons[1] == 0 and msg.buttons[2] == 1 and msg.buttons[3] == 0:
-        startStopHPR(True, True)
-    elif msg.buttons[0] == 1 and msg.buttons[1] == 0 and msg.buttons[2] == 0 and msg.buttons[3] == 0:
-        startStopRosVisual(True, True)
-    elif msg.buttons[0] == 0 and msg.buttons[1] == 1 and msg.buttons[2] == 0 and msg.buttons[3] == 0:
-        startStopMotionAnalysisHuman(True, True)
-    elif msg.buttons[0] == 0 and msg.buttons[1] == 0 and msg.buttons[2] == 0 and msg.buttons[3] == 1:
-        startStopMotionAnalysisObject(True, True)
+    if msg.buttons[0] == 0 and msg.buttons[1] == 0 and msg.buttons[2] == 1 and msg.buttons[3] == 0 and (msg.axes[5] ==0 or msg.axes[5] == 1):
+        startStopHPR(True, False)
+    elif msg.buttons[0] == 1 and msg.buttons[1] == 0 and msg.buttons[2] == 0 and msg.buttons[3] == 0 and (msg.axes[5] ==0 or msg.axes[5] == 1):
+        startStopRosVisual(True, False)
+    elif msg.buttons[0] == 0 and msg.buttons[1] == 1 and msg.buttons[2] == 0 and msg.buttons[3] == 0 and (msg.axes[5] ==0 or msg.axes[5] == 1):
+        startStopMotionAnalysisHuman(True, False)
+    elif msg.buttons[0] == 0 and msg.buttons[1] == 0 and msg.buttons[2] == 0 and msg.buttons[3] == 1 and i(msg.axes[5] ==0 or msg.axes[5] == 1):
+        startStopMotionAnalysisObject(True, False)
     if msg.buttons[6] == 1:
         cancelNavigationGoal()
     if msg.buttons[7] == 1:
@@ -426,6 +430,14 @@ def joyCallback(msg):
         sound_msg = Sound()
         sound_msg.value = 0
         sound_pub.publish(sound_msg)
+    if msg.buttons[2] == 1 and msg.axes[5] != 0 and msg.axes[5] != 1:
+	startStopHPR(False, True)
+    if msg.buttons[0] == 1 and msg.axes[5] != 0 and msg.axes[5] != 1:
+	startStopRosVisual(False, True)
+    if msg.buttons[1] == 1 and msg.axes[5] != 0 and msg.axes[5] != 1:
+	startStopMotionAnalysisHuman(False, True)
+    if msg.buttons[3] == 1 and msg.axes[5] != 0 and msg.axes[5] != 1:
+	startStopMotionAnalysisObject(False, True)
 
 
     print msg
