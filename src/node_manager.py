@@ -33,8 +33,10 @@ pc_battery_sub = None
 running_hpr = False
 navigating = False
 charging = False
+pub_start = None
 sound_pub = None
 goal_point = []
+int_pub = None
 joy_sub = None
 ost_pub = None
 gym_x = -13.982
@@ -49,7 +51,7 @@ first_detect = True
 
 def init():
     global movement_sensor_sub, nav_status_sub, pub_stop, pc_battery_sub, kobuki_battery_sub
-    global check_batteries, joy_sub, sound_pub, ost_pub
+    global check_batteries, joy_sub, sound_pub, ost_pub, int_pub
     rospy.init_node('radio_node_manager')
     rospy.get_param("~check_batteries", False)
     movement_sensor_sub = rospy.Subscriber('motion_detection_sensor_status_publisher/status', SensorStatusMsg, motionSensorStatus)
@@ -58,6 +60,7 @@ def init():
     sound_pub = rospy.Publisher('mobile_base/commands/sound', Sound)
     goal_subscriber = rospy.Subscriber("/move_base/goal", MoveBaseActionGoal, getGoalPoint)
     pub_stop = rospy.Publisher('move_base/cancel', GoalID, queue_size=10)
+    int_pub = rospy.Publisher('radio_generate_report', Int32, queue_size=1)
     if check_batteries:
         #pc_battery_sub = rospy.Subscriber('placeholder', PlaceHolderMsg, pcBatteryCallback)
         kobuki_battery_sub = rospy.Subscriber('mobile_base/sensors/core', SensorState, kobukiBatteryCallback)
@@ -83,21 +86,27 @@ def init():
     command = shlex.split(command)
     subprocess.Popen(command)
     time.sleep(20)
-    
-    pub_start = rospy.Publisher('initialpose', PoseWithCovarianceStamped, queue_size=10)
-    start_point = PoseWithCovarianceStamped()
+
+    command = "rosrun marker_mapping marker_mapping_node.py"
+    command = shlex.split(command)
+    subprocess.Popen(command)
+    sleep(5)
+    initial_pose()
+
+    #pub_start = rospy.Publisher('initialpose', PoseWithCovarianceStamped, queue_size=10)
+    #start_point = PoseWithCovarianceStamped()
     #start point position x
-    start_point.pose.pose.position.x = -6.329
+    #start_point.pose.pose.position.x = -6.329
     #start point position y     
-    start_point.pose.pose.position.y = 10.087
-    start_point.header.stamp = rospy.Time.now()
+    #start_point.pose.pose.position.y = 10.087
+    #start_point.header.stamp = rospy.Time.now()
     #start_point.pose.pose.orientation.z = -2.122
-    quat = quaternion_from_euler(0.0, 0.0, -2.122) # roll, pitch, yaw
-    start_point.pose.pose.orientation = Quaternion(*quat.tolist())
+    #quat = quaternion_from_euler(0.0, 0.0, -2.122) # roll, pitch, yaw
+    #start_point.pose.pose.orientation = Quaternion(*quat.tolist())
     #start_point.pose.pose.orientation.w = 0
-    start_point.header.frame_id = 'map'
-    rospy.sleep(1)
-    pub_start.publish(start_point)
+    #start_point.header.frame_id = 'map'
+    #rospy.sleep(1)
+    #pub_start.publish(start_point)
     sound_msg = Sound()
     sound_msg.value = 6
     sound_pub.publish(sound_msg)
@@ -283,109 +292,8 @@ def cancelNavigationGoal():
 
 
 def createReport():
-	global sound_pub
-	print 'report'
-	files_to_remove = []
-	fromaddr = "roboskelncsr@gmail.com"
-	toaddr = ["gstavrinos@iit.demokritos.gr", "gs.juggle@gmail.com"]
-    	subject = "Medical Report as of "+datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-	msg = MIMEMultipart()
-	msg['From'] = fromaddr
-	msg['To'] = ", ".join(toaddr)
-	msg['BCC'] = "stavrinosgeo@gmail.com"
-	msg['Subject'] = subject
-	 
-	body = subject+"\n\n\n"
-
-	body += "Getting out of bed and pill intake:\n"
-
-	rospack = rospkg.RosPack()
-	path = rospack.get_path('motion_analysis_wrapper')+'/logs/'
-	files = []
-	found_file = False
-	for i in os.listdir(path):
-    		if os.path.isfile(os.path.join(path,i)) and 'official_log_'+datetime.today().strftime("%d-%m-%Y") in i:
-			found_file = True
-        		files.append(i)
-			files_to_remove.append(path+i)
-
-	if found_file:
-    		for f in files:
-        		with open(path+f, 'r') as myfile:
-            			body += myfile.read()
-	files = []
-	found_file = False
-
-	body += "---\n\n\n"
-
-	body += "Walking 4 meters:\n"
-
-	path = rospack.get_path('hpr_wrapper')+'/logs/'
-	for i in os.listdir(path):
-    		if os.path.isfile(os.path.join(path,i)) and 'official_log_'+datetime.today().strftime("%d-%m-%Y") in i:
-        		found_file = True
-			files.append(i)
-			files_to_remove.append(path+i)
-
-	if found_file:
-    		for f in files:
-        		with open(path+f, 'r') as myfile:
-            			body += myfile.read()
-
-	files = []
-	found_file = False
-
-	body += "---\n\n\n"
-
-	body += "Standing from a chair:\n"
-
-	path = rospack.get_path('ros_visual_wrapper')+'/logs/'
-	for i in os.listdir(path):
-		if os.path.isfile(os.path.join(path,i)) and 'official_log_'+datetime.today().strftime("%d-%m-%Y") in i:
-			found_file = True
-			files.append(i)
-			files_to_remove.append(path+i)
-
-	if found_file:
-        	for f in files:
-            		with open(path+f, 'r') as myfile:
-                    		body += myfile.read()
-
-	body += "---\n\n\n"
-
-	files = []
-	found_file = False
-
-	body += "Gym info:\n"
-
-	path = rospack.get_path('radio_node_manager')+'/logs/'
-	for i in os.listdir(path):
-		if os.path.isfile(os.path.join(path,i)) and 'official_log_'+datetime.today().strftime("%d-%m-%Y") in i:
-			found_file = True
-        		files.append(i)
-        		files_to_remove.append(path+i)
-
-	if found_file:
-        	for f in files:
-            		with open(path+f, 'r') as myfile:
-                    		body += myfile.read()
-
-	body += "---\n\n\n"
-
-	msg.attach(MIMEText(body, 'plain'))
- 
-	server = smtplib.SMTP('smtp.gmail.com', 587)
-	server.starttls()
-	server.login(fromaddr, "reportt0d0cs")
-	text = msg.as_string()
-	server.sendmail(fromaddr, toaddr, text)
-	server.quit()
-	for f in files_to_remove:
-		os.remove(f)
-		print 'Deleted',f
-	sound_msg = Sound()
-	sound_msg.value = 0
-	sound_pub.publish(sound_msg)
+    global int_pub
+    int_pub.publish(0)
 
 
 def joyCallback(msg):
@@ -394,6 +302,7 @@ def joyCallback(msg):
     #A starts ros_visual
     #B starts motion_analysis for human
     #Y starts motion_analysis for object
+    #Up/Forward on cross-pad initializes robot position
     #Back/Select to cancel navigation goal
     #Start sends a report based on today's date.
     #R1 pills are placed to the correct position
@@ -412,15 +321,14 @@ def joyCallback(msg):
         startStopMotionAnalysisHuman(True, False)
     elif msg.buttons[0] == 0 and msg.buttons[1] == 0 and msg.buttons[2] == 0 and msg.buttons[3] == 1 and (msg.axes[5] ==0 or msg.axes[5] == 1):
         startStopMotionAnalysisObject(True, False)
+    elif msg.axes[7] == 1:
+        initial_pose()
     if msg.buttons[6] == 1:
         cancelNavigationGoal()
     if msg.buttons[7] == 1:
         createReport()
     if msg.buttons[5] == 1:
         ost_pub.publish(2)
-	#command = "rostopic pub /motion_analysis/object_state std_msgs/Int32 2"
-        #command = shlex.split(command)
-        #subprocess.Popen(command)
         sound_msg = Sound()
         sound_msg.value = 0
         sound_pub.publish(sound_msg)
@@ -431,18 +339,17 @@ def joyCallback(msg):
         command = "roslaunch kobuki_auto_docking activate.launch"
         command = shlex.split(command)
         subprocess.Popen(command)
-
         sound_msg = Sound()
         sound_msg.value = 0
         sound_pub.publish(sound_msg)
     if msg.buttons[2] == 1 and msg.axes[5] != 0 and msg.axes[5] != 1:
-	startStopHPR(False, True)
+        startStopHPR(False, True)
     if msg.buttons[0] == 1 and msg.axes[5] != 0 and msg.axes[5] != 1:
-	startStopRosVisual(False, True)
+        startStopRosVisual(False, True)
     if msg.buttons[1] == 1 and msg.axes[5] != 0 and msg.axes[5] != 1:
-	startStopMotionAnalysisHuman(False, True)
+        startStopMotionAnalysisHuman(False, True)
     if msg.buttons[3] == 1 and msg.axes[5] != 0 and msg.axes[5] != 1:
-	startStopMotionAnalysisObject(False, True)
+        startStopMotionAnalysisObject(False, True)
 
 
     print msg
@@ -494,7 +401,7 @@ def startStopMotionAnalysisHuman(start, stop):
             command = "roslaunch motion_analysis human_event_detection.launch"
             command = shlex.split(command)
             subprocess.Popen(command)
-	    time.sleep(10)
+            time.sleep(10)
             command = "roslaunch motion_analysis_wrapper wrapper.launch"
             command = shlex.split(command)
             subprocess.Popen(command)
@@ -524,7 +431,7 @@ def startStopMotionAnalysisObject(start, stop):
             command = "roslaunch motion_analysis object_event_detection.launch"
             command = shlex.split(command)
             subprocess.Popen(command)
-	    time.sleep(10)
+            time.sleep(10)
             command = "roslaunch motion_analysis_wrapper wrapper.launch"
             command = shlex.split(command)
             subprocess.Popen(command)
@@ -585,12 +492,16 @@ def startStopRosVisual(start, stop):
             sound_pub.publish(sound_msg)
 
 def emergencyShutdown(msg):
-	#command = '/usr/bin/dbus-send --system --print-reply --dest="org.freedesktop.ConsoleKit" /org/freedesktop/ConsoleKit/Manager org.freedesktop.ConsoleKit.Manager.Stop'
     command = "rosnode kill mobile_base_nodelet_manager"
     command = shlex.split(command)
     subprocess.Popen(command)
 
     command = "rosnode kill radio_node_manager" #using this kill, we will run all the commands after Ctrl+C
+    command = shlex.split(command)
+    subprocess.Popen(command)
+
+def initial_pose():
+    command = "rosservice call /marker_mapping_node/init_pose_from_marker \"id: []\""
     command = shlex.split(command)
     subprocess.Popen(command)
 
