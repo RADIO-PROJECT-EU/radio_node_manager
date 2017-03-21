@@ -15,35 +15,12 @@ def init():
     global sound_pub, pub_start
     rospy.init_node('radio_node_manager')
     rospy.Subscriber('radio_node_manager_main_controller/instruction', Int32, instructionCallback)
-    sound_pub = rospy.Publisher('mobile_base/commands/sound', Sound)
-    #TODO ask the main server about what the initial state should be
-    #Set initial pose on launch based on the main server's last saved position.
-    #Maybe the robot itself could do this too. A save_current_state node would be useful.
+    sound_pub = rospy.Publisher('mobile_base/commands/sound', Sound, queue_size=1)
 
     #Run here all the initial nodes
-    command = "roslaunch turtlebot_radio_bringup radio_bringup.launch"
-    command = shlex.split(command)
-    subprocess.Popen(command)
-    time.sleep(30)
-    command = "roslaunch turtlebot_navigation radio_move_base.launch"
-    command = shlex.split(command)
-    subprocess.Popen(command)
-    time.sleep(2)
-    command = "roslaunch turtlebot_navigation radio_amcl_demo.launch"
-    command = shlex.split(command)
-    subprocess.Popen(command)
-    time.sleep(2)
-    command = "rosrun map_server map_server /home/turtlebot/test1.yaml"
-    command = shlex.split(command)
-    subprocess.Popen(command)
-    time.sleep(20)
-
-    command = "rosrun marker_mapping marker_mapping_node.py"
-    command = shlex.split(command)
-    subprocess.Popen(command)
-    sleep(5)
+    time.sleep(15)
     initial_pose()
-
+    time.sleep(10)
     #pub_start = rospy.Publisher('initialpose', PoseWithCovarianceStamped, queue_size=10)
     #start_point = PoseWithCovarianceStamped()
     #start point position x
@@ -65,10 +42,10 @@ def init():
     while not rospy.is_shutdown():  
         rospy.spin()
     #we reach this point only after Ctrl-C
-    HPR(False)
-    rosVisual(False)
-    motionAnalysisHuman(False)
-    motionAnalysisObject(False)
+    #HPR(False)
+    #rosVisual(False)
+    #motionAnalysisHuman(False)
+    #motionAnalysisObject(False)
 
 def instructionCallback(msg):
     if msg.data == 0:
@@ -91,19 +68,20 @@ def instructionCallback(msg):
         sound_pub.publish(sound_msg)
 
 def HPR(start):
-    global running_hpr, sound_pub
+    global sound_pub
     if start:
-        if not running_hpr:
-            command = "roslaunch human_pattern_recognition hpr.launch"
-            command = shlex.split(command)
-            subprocess.Popen(command)
-            sound_msg = Sound()
-            sound_msg.value = 0
-            sound_pub.publish(sound_msg)
+        print 'Starting HPR'
+        command = "roslaunch human_pattern_recognition hpr.launch"
+        command = shlex.split(command)
+        subprocess.Popen(command)
+        sound_msg = Sound()
+        sound_msg.value = 0
+        sound_pub.publish(sound_msg)
 
 def motionAnalysisHuman(start):
-    global running_motion_analysis_human, sound_pub
+    global sound_pub
     if start:
+        print 'Starting motion_analysis human'
         command = "roslaunch motion_analysis human_event_detection.launch"
         command = shlex.split(command)
         subprocess.Popen(command)
@@ -113,8 +91,9 @@ def motionAnalysisHuman(start):
         sound_pub.publish(sound_msg)
 
 def motionAnalysisObject(start):
-    global running_motion_analysis_obj, sound_pub
+    global sound_pub
     if start:
+        print 'Starting motion_analysis object'
         command = "roslaunch motion_analysis object_event_detection.launch"
         command = shlex.split(command)
         subprocess.Popen(command)
@@ -124,10 +103,10 @@ def motionAnalysisObject(start):
         sound_pub.publish(sound_msg)
 
 def rosVisual(start):
-    global running_ros_visual, sound_pub
+    global sound_pub
     if start:
         print 'Starting ros_visual'
-        command = "roslaunch ros_visual ros_visual.launch"
+        command = "roslaunch ros_visual ros_visual_classifier.launch"
         command = shlex.split(command)
         subprocess.Popen(command)
         sound_msg = Sound()
