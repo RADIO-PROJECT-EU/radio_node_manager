@@ -53,6 +53,10 @@ def instructionCallback(msg):
     elif msg.data == 1:
         motionAnalysisHuman(True)
     elif msg.data == 2:
+        # TODO change configuration
+        motionAnalysisObject(True)
+    elif msg.data == 22:
+        # TODO change configuration
         motionAnalysisObject(True)
     elif msg.data == 3:
         rosVisual(True)
@@ -66,6 +70,8 @@ def instructionCallback(msg):
         sound_msg = Sound()
         sound_msg.value = 0
         sound_pub.publish(sound_msg)
+    elif msg.data == 5:
+        initial_pose()
 
 def HPR(start):
     global sound_pub
