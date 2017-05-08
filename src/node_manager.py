@@ -15,10 +15,10 @@ def init():
     rospy.init_node('radio_node_manager')
     rospy.Subscriber('radio_node_manager_main_controller/instruction', Int32, instructionCallback)
     sound_pub = rospy.Publisher('mobile_base/commands/sound', Sound, queue_size=1)
-    ost_pub = rospy.Publisher("motion_analysis/object_state", Int32)
+    ost_pub = rospy.Publisher("motion_analysis/object_state", Int32, queue_size=1)
 
     #Run here all the initial nodes
-    time.sleep(15)
+    time.sleep(5)
     initial_pose()
     time.sleep(10)
     sound_msg = Sound()
@@ -40,12 +40,14 @@ def instructionCallback(msg):
     elif msg.data == 3:
         rosVisual()
     elif msg.data == 4:
+        '''TODO docking not ready yet
         command = "roslaunch kobuki_auto_docking minimal.launch"
         command = shlex.split(command)
         subprocess.Popen(command)
         command = "roslaunch kobuki_auto_docking activate.launch"
         command = shlex.split(command)
         subprocess.Popen(command)
+        '''
         sound_msg = Sound()
         sound_msg.value = 0
         sound_pub.publish(sound_msg)
