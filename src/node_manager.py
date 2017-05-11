@@ -40,19 +40,18 @@ def instructionCallback(msg):
     elif msg.data == 3:
         rosVisual()
     elif msg.data == 4:
-        '''TODO docking not ready yet
-        command = "roslaunch kobuki_auto_docking minimal.launch"
-        command = shlex.split(command)
-        subprocess.Popen(command)
         command = "roslaunch kobuki_auto_docking activate.launch"
         command = shlex.split(command)
         subprocess.Popen(command)
-        '''
         sound_msg = Sound()
         sound_msg.value = 0
         sound_pub.publish(sound_msg)
     elif msg.data == 5:
         initial_pose()
+        time.sleep(2)
+        sound_msg = Sound()
+        sound_msg.value = 0
+        sound_pub.publish(sound_msg)
 
 def HPR():
     global sound_pub
