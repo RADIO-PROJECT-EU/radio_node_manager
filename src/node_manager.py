@@ -18,7 +18,7 @@ def init():
     ost_pub = rospy.Publisher("motion_analysis/object_state", Int32, queue_size=1)
 
     #Run here all the initial nodes
-    time.sleep(5)
+    time.sleep(50)
     initial_pose()
     time.sleep(10)
     sound_msg = Sound()
