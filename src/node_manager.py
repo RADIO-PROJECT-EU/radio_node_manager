@@ -70,7 +70,6 @@ def motionAnalysisHuman():
     command = shlex.split(command)
     subprocess.Popen(command)
     time.sleep(10)
-    ost_pub.publish(2)
     sound_msg = Sound()
     sound_msg.value = 0
     sound_pub.publish(sound_msg)
@@ -84,6 +83,7 @@ def motionAnalysisObject(mode):
     command = shlex.split(command)
     subprocess.Popen(command)
     time.sleep(10)
+    ost_pub.publish(2)
     sound_msg = Sound()
     sound_msg.value = 0
     sound_pub.publish(sound_msg)
