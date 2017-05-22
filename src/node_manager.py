@@ -75,7 +75,7 @@ def motionAnalysisHuman():
     sound_pub.publish(sound_msg)
 
 def motionAnalysisObject(mode):
-    global sound_pub
+    global sound_pub, ost_pub
     print 'Starting motion_analysis object'
     command = "roslaunch motion_analysis object_event_detection.launch"
     if mode == 2:
