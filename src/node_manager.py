@@ -30,21 +30,66 @@ def init():
     while not rospy.is_shutdown():
         rospy.spin()
 
+def startSound():
+    global sound_pub
+    sound_msg = Sound()
+    sound_msg.value = 0
+    sound_pub.publish(sound_msg)
+
+def endSound():
+    global sound_pub
+    sound_msg = Sound()
+    sound_msg.value = 1
+    sound_pub.publish(sound_msg)
+
+def errorSound():
+    global sound_pub
+    sound_msg = Sound()
+    sound_msg.value = 4
+    sound_pub.publish(sound_msg)
+
+##
+## @brief      The callback for the instruction service.
+##
+## @param      instruction  The instruction
+##              Current possible values are:
+##              0:  Start HPR
+##              10: Stop HPR
+##              1:  Start motion analysis in human mode
+##              2:  Start motion analysis in pill mode
+##              11: Stop motion analysis (any mode)
+##              3:  Start ros_visual
+##              13: Stop ros_visual
+##              4:  Start auto docking
+##              5:  Reset initial pose
+##              -1: Play "start" sound
+##              -2: Play "end" sound
+##              -3: Play "error" sound
+##
+## @return     { description_of_the_return_value }
+##
 def reactToInstruction(instruction):
+    global sound_pub
     if instruction.command == 0:
-        HPR()
+        HPR(True)
+        return True
+    elif instruction.command == 10:
+        HPR(False)
         return True
     elif instruction.command == 1:
-        motionAnalysisHuman()
+        motionAnalysis(True, 10)
         return True
     elif instruction.command == 2:
-        motionAnalysisObject(1)
+        motionAnalysisObject(True, 12)
         return True
-    elif instruction.command == 22:
-        motionAnalysisObject(2)
+    elif instruction.command == 11:
+        motionAnalysisObject(False)
         return True
     elif instruction.command == 3:
-        rosVisual()
+        rosVisual(True)
+        return True
+    elif instruction.command == 13:
+        rosVisual(False)
         return True
     elif instruction.command == 4:
         command = "roslaunch kobuki_auto_docking activate.launch"
@@ -61,56 +106,97 @@ def reactToInstruction(instruction):
         sound_msg.value = 0
         sound_pub.publish(sound_msg)
         return True
+    elif instruction.command == -1:
+        startSound()
+        return True
+    elif instruction.command == -2:
+        endSound()
+        return True
+    elif instruction.command == -3:
+        errorSound()
+        return True
     return False
 
+##
+## @brief      This function handles the HPR service
+##
+## @param      start  True to start and false to stop the node
+##
+def HPR(start):
+    answer = not start
+    command = 0
+    if start:
+        command = 1
+        rospy.wait_for_service('/human_pattern_recognition/laser_wall_extraction/node_state_service')
+        try:
+            service = rospy.ServiceProxy('/human_pattern_recognition/laser_wall_extraction/node_state_service', InstructionWithAnswer)
+            answer = service(command)
+        except rospy.ServiceException, e:
+            print e
+    if start == answer:
+        if start:
+            startSound()
+        else:
+            endSound()
+    else:
+        errorSound()
 
-def HPR():
-    global sound_pub
-    print 'Starting HPR'
-    command = "roslaunch human_pattern_recognition hpr.launch"
-    command = shlex.split(command)
-    subprocess.Popen(command)
-    time.sleep(5)
-    sound_msg = Sound()
-    sound_msg.value = 0
-    sound_pub.publish(sound_msg)
+##
+## @brief      This function handles the motion_analysis service
+##
+## @param      start  True to start and false to stop the node
+## @param      mode   Which mode to start (if start == true)
+##
+def motionAnalysis(start, mode=0):
+    answer = not start
+    command = 0
+    if start:
+        command = 11
+        rospy.wait_for_service('/motion_analysis/node_state_service')
+        try:
+            service = rospy.ServiceProxy('/motion_analysis/node_state_service', InstructionWithAnswer)
+            answer = service(command)
+            if answer:
+                command = mode
+                rospy.wait_for_service('/motion_analysis/node_state_service')
+                try:
+                    service = rospy.ServiceProxy('/motion_analysis/node_state_service', InstructionWithAnswer)
+                    answer = service(command)
+                except rospy.ServiceException, e:
+                    print e
+        except rospy.ServiceException, e:
+            print e
+    if start == answer:
+        if start:
+            startSound()
+        else:
+            endSound()
+    else:
+        errorSound()
 
-def motionAnalysisHuman():
-    global sound_pub
-    print 'Starting motion_analysis human'
-    command = "roslaunch motion_analysis human_event_detection.launch"
-    command = shlex.split(command)
-    subprocess.Popen(command)
-    time.sleep(10)
-    sound_msg = Sound()
-    sound_msg.value = 0
-    sound_pub.publish(sound_msg)
-
-def motionAnalysisObject(mode):
-    global sound_pub, ost_pub
-    print 'Starting motion_analysis object'
-    command = "roslaunch motion_analysis object_event_detection.launch"
-    if mode == 2:
-        command = "roslaunch motion_analysis object_event_detection2.launch"
-    command = shlex.split(command)
-    subprocess.Popen(command)
-    time.sleep(12)
-    ost_pub.publish(2)
-    time.sleep(3)
-    sound_msg = Sound()
-    sound_msg.value = 0
-    sound_pub.publish(sound_msg)
-
-def rosVisual():
-    global sound_pub
-    print 'Starting ros_visual'
-    command = "roslaunch ros_visual ros_visual_classifier.launch"
-    command = shlex.split(command)
-    subprocess.Popen(command)
-    time.sleep(5)
-    sound_msg = Sound()
-    sound_msg.value = 0
-    sound_pub.publish(sound_msg)
+##
+## @brief      This function handles the ros_visual service
+##
+## @param      start  True to start and false to stop the node
+##
+def rosVisual(start):
+    answer = not start
+    command = 0
+    if start:
+        command = 1
+        rospy.wait_for_service('/ros_visual/chroma/node_state_service')
+        try:
+            service = rospy.ServiceProxy('/ros_visual/chroma/node_state_service', InstructionWithAnswer)
+            answer = service(command)
+        except rospy.ServiceException, e:
+            print e
+    if start == answer:
+        if start:
+            startSound()
+        else:
+            endSound()
+    else:
+        errorSound()
 
 def initial_pose():
     command = "rosservice call /marker_mapping_node/init_pose_from_marker \"id: []\""
