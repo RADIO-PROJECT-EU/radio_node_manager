@@ -9,15 +9,12 @@ from radio_services.srv import InstructionWithAnswer
 
 pub_start = None
 sound_pub = None
-ost_pub = None
 
 def init():
-    global sound_pub, pub_start, ost_pub
+    global sound_pub, pub_start
     rospy.init_node('radio_node_manager_robot')
     rospy.Service('robot_instruction_receiver', InstructionWithAnswer, reactToInstruction)
     sound_pub = rospy.Publisher('mobile_base/commands/sound', Sound, queue_size=1)
-
-    ost_pub = rospy.Publisher("motion_analysis/object_state", Int32, queue_size=1)
 
     #Run here all the initial nodes
     time.sleep(50)
@@ -80,10 +77,10 @@ def reactToInstruction(instruction):
         motionAnalysis(True, 10)
         return True
     elif instruction.command == 2:
-        motionAnalysisObject(True, 12)
+        motionAnalysis(True, 12)
         return True
     elif instruction.command == 11:
-        motionAnalysisObject(False)
+        motionAnalysis(False)
         return True
     elif instruction.command == 3:
         rosVisual(True)
@@ -123,22 +120,33 @@ def reactToInstruction(instruction):
 ## @param      start  True to start and false to stop the node
 ##
 def HPR(start):
-    answer = not start
+    test = InstructionWithAnswer()
+    test.answer = not start
     command = 0
     if start:
         command = 1
-        rospy.wait_for_service('/human_pattern_recognition/laser_wall_extraction/node_state_service')
+        rospy.wait_for_service('/human_pattern_recognition/laser_wall_extraction/node_state_service', timeout = 10)
         try:
             service = rospy.ServiceProxy('/human_pattern_recognition/laser_wall_extraction/node_state_service', InstructionWithAnswer)
-            answer = service(command)
+            test = service(command)
+            print test.answer
         except rospy.ServiceException, e:
             print e
-    if start == answer:
+    else:
+        command = 0
+        rospy.wait_for_service('/human_pattern_recognition/laser_wall_extraction/node_state_service', timeout = 10)
+        try:
+            service = rospy.ServiceProxy('/human_pattern_recognition/laser_wall_extraction/node_state_service', InstructionWithAnswer)
+            test = service(command)
+        except rospy.ServiceException, e:
+            print e
+    if start == test.answer:
         if start:
             startSound()
         else:
             endSound()
     else:
+        print 'error'
         errorSound()
 
 ##
@@ -148,25 +156,35 @@ def HPR(start):
 ## @param      mode   Which mode to start (if start == true)
 ##
 def motionAnalysis(start, mode=0):
-    answer = not start
+    test = InstructionWithAnswer()
+    test.answer = not start
     command = 0
     if start:
         command = 11
-        rospy.wait_for_service('/motion_analysis/node_state_service')
+        rospy.wait_for_service('/motion_analysis/node_state_service', timeout = 10)
         try:
             service = rospy.ServiceProxy('/motion_analysis/node_state_service', InstructionWithAnswer)
-            answer = service(command)
-            if answer:
+            test = service(command)
+            if test.answer:
+                time.sleep(2)
                 command = mode
-                rospy.wait_for_service('/motion_analysis/node_state_service')
+                rospy.wait_for_service('/motion_analysis/node_state_service', timeout = 10)
                 try:
                     service = rospy.ServiceProxy('/motion_analysis/node_state_service', InstructionWithAnswer)
-                    answer = service(command)
+                    test = service(command)
                 except rospy.ServiceException, e:
                     print e
         except rospy.ServiceException, e:
             print e
-    if start == answer:
+    else:
+        command = 0
+        rospy.wait_for_service('/motion_analysis/node_state_service', timeout = 10)
+        try:
+            service = rospy.ServiceProxy('/motion_analysis/node_state_service', InstructionWithAnswer)
+            test = service(command)
+        except rospy.ServiceException, e:
+            print e
+    if start == test.answer:
         if start:
             startSound()
         else:
@@ -180,17 +198,26 @@ def motionAnalysis(start, mode=0):
 ## @param      start  True to start and false to stop the node
 ##
 def rosVisual(start):
-    answer = not start
+    test = InstructionWithAnswer()
+    test.answer = not start
     command = 0
     if start:
         command = 1
-        rospy.wait_for_service('/ros_visual/chroma/node_state_service')
+        rospy.wait_for_service('/ros_visual/chroma/node_state_service', timeout = 10)
         try:
             service = rospy.ServiceProxy('/ros_visual/chroma/node_state_service', InstructionWithAnswer)
-            answer = service(command)
+            test = service(command)
         except rospy.ServiceException, e:
             print e
-    if start == answer:
+    else:
+        command = 0
+        rospy.wait_for_service('/ros_visual/chroma/node_state_service', timeout = 10)
+        try:
+            service = rospy.ServiceProxy('/ros_visual/chroma/node_state_service', InstructionWithAnswer)
+            test = service(command)
+        except rospy.ServiceException, e:
+            print e
+    if start == test.answer:
         if start:
             startSound()
         else:
