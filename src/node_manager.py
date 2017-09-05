@@ -166,7 +166,7 @@ def motionAnalysis(start, mode=0):
             service = rospy.ServiceProxy('/motion_analysis/node_state_service', InstructionWithAnswer)
             test = service(command)
             if test.answer:
-                time.sleep(2)
+                time.sleep(3)
                 command = mode
                 rospy.wait_for_service('/motion_analysis/node_state_service', timeout = 10)
                 try:
