@@ -125,20 +125,20 @@ def HPR(start):
     command = 0
     if start:
         command = 1
-        rospy.wait_for_service('/human_pattern_recognition/laser_wall_extraction/node_state_service', timeout = 10)
         try:
+            rospy.wait_for_service('/human_pattern_recognition/laser_wall_extraction/node_state_service', timeout = 10)
             service = rospy.ServiceProxy('/human_pattern_recognition/laser_wall_extraction/node_state_service', InstructionWithAnswer)
             test = service(command)
             print test.answer
-        except rospy.ServiceException, e:
+        except (rospy.ServiceException, rospy.exceptions.ROSException) as e:
             print e
     else:
         command = 0
-        rospy.wait_for_service('/human_pattern_recognition/laser_wall_extraction/node_state_service', timeout = 10)
         try:
+            rospy.wait_for_service('/human_pattern_recognition/laser_wall_extraction/node_state_service', timeout = 10)
             service = rospy.ServiceProxy('/human_pattern_recognition/laser_wall_extraction/node_state_service', InstructionWithAnswer)
             test = service(command)
-        except rospy.ServiceException, e:
+        except (rospy.ServiceException, rospy.exceptions.ROSException) as e:
             print e
     if start == test.answer:
         if start:
@@ -161,28 +161,28 @@ def motionAnalysis(start, mode=0):
     command = 0
     if start:
         command = 11
-        rospy.wait_for_service('/motion_analysis/node_state_service', timeout = 10)
         try:
+            rospy.wait_for_service('/motion_analysis/node_state_service', timeout = 10)
             service = rospy.ServiceProxy('/motion_analysis/node_state_service', InstructionWithAnswer)
             test = service(command)
             if test.answer:
                 time.sleep(3)
                 command = mode
-                rospy.wait_for_service('/motion_analysis/node_state_service', timeout = 10)
                 try:
+                    rospy.wait_for_service('/motion_analysis/node_state_service', timeout = 10)
                     service = rospy.ServiceProxy('/motion_analysis/node_state_service', InstructionWithAnswer)
                     test = service(command)
-                except rospy.ServiceException, e:
+                except (rospy.ServiceException, rospy.exceptions.ROSException) as e:
                     print e
-        except rospy.ServiceException, e:
+        except (rospy.ServiceException, rospy.exceptions.ROSException) as e:
             print e
     else:
         command = 0
-        rospy.wait_for_service('/motion_analysis/node_state_service', timeout = 10)
         try:
+            rospy.wait_for_service('/motion_analysis/node_state_service', timeout = 10)
             service = rospy.ServiceProxy('/motion_analysis/node_state_service', InstructionWithAnswer)
             test = service(command)
-        except rospy.ServiceException, e:
+        except (rospy.ServiceException, rospy.exceptions.ROSException) as e:
             print e
     if start == test.answer:
         if start:
@@ -203,19 +203,19 @@ def rosVisual(start):
     command = 0
     if start:
         command = 1
-        rospy.wait_for_service('/ros_visual/chroma/node_state_service', timeout = 10)
         try:
+            rospy.wait_for_service('/ros_visual/chroma/node_state_service', timeout = 10)
             service = rospy.ServiceProxy('/ros_visual/chroma/node_state_service', InstructionWithAnswer)
             test = service(command)
-        except rospy.ServiceException, e:
+        except (rospy.ServiceException, rospy.exceptions.ROSException) as e:
             print e
     else:
         command = 0
-        rospy.wait_for_service('/ros_visual/chroma/node_state_service', timeout = 10)
         try:
+            rospy.wait_for_service('/ros_visual/chroma/node_state_service', timeout = 10)
             service = rospy.ServiceProxy('/ros_visual/chroma/node_state_service', InstructionWithAnswer)
             test = service(command)
-        except rospy.ServiceException, e:
+        except (rospy.ServiceException, rospy.exceptions.ROSException) as e:
             print e
     if start == test.answer:
         if start:
